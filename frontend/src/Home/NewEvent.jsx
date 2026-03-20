@@ -78,15 +78,17 @@ const UpdateEvent = () => {
     }
   };
 
-  const handleEdit = (event) => {
-    setEditId(event._id);
-    setForm({
-      title: event.title,
-      date: event.date,
-      month: event.month,
-      description: event.description,
-    });
-  };
+ 
+
+   const handleEdit = (event) => {
+     setEditId(event._id);
+     setForm({
+       title: event.title,
+       date: event.date,
+       month: event.month,
+       description: event.description,
+     });
+   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
@@ -161,6 +163,8 @@ const UpdateEvent = () => {
           </form>
         </div>
 
+
+        
         {/* Event List */}
         <div className="mt-10 space-y-6">
           <h3 className="text-xl font-bold text-gray-700">All Events</h3>
