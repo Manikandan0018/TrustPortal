@@ -43,12 +43,64 @@ const News = ({id}) => {
 
   const likeMutation = useMutation({
     mutationFn: likePost,
-    onSuccess: () => queryClient.invalidateQueries(['todos']),
+
+    onMutate: async ({ postId, userId }) => {
+      await queryClient.cancelQueries(["todos"]);
+
+      const previous = queryClient.getQueryData(["todos"]);
+
+      queryClient.setQueryData(["todos"], (old) =>
+        old.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                likes: [...(post.likes || []), userId],
+              }
+            : post,
+        ),
+      );
+
+      return { previous };
+    },
+
+    onError: (err, _, context) => {
+      queryClient.setQueryData(["todos"], context.previous);
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries(["todos"]);
+    },
   });
 
   const commentMutation = useMutation({
     mutationFn: commentPost,
-    onSuccess: () => queryClient.invalidateQueries(['todos']),
+
+    onMutate: async ({ postId, userId, comment }) => {
+      await queryClient.cancelQueries(["todos"]);
+
+      const previous = queryClient.getQueryData(["todos"]);
+
+      queryClient.setQueryData(["todos"], (old) =>
+        old.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                comments: [...(post.comments || []), { userId, text: comment }],
+              }
+            : post,
+        ),
+      );
+
+      return { previous };
+    },
+
+    onError: (err, _, context) => {
+      queryClient.setQueryData(["todos"], context.previous);
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries(["todos"]);
+    },
   });
 
   const toggleCommentBox = (postId) => {
@@ -64,7 +116,28 @@ const News = ({id}) => {
     setCommentBoxes((prev) => ({ ...prev, [postId]: false }));
   };
 
-  if (isLoading) return <div className="text-center">Loading news...</div>;
+  if (isLoading) {
+    return (
+      <section className="py-16 px-4 bg-gray-100">
+        <h2 className="text-4xl font-bold text-center mb-10">
+          Latest <span className="text-orange-500">News</span>
+        </h2>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded shadow p-4 animate-pulse">
+              <div className="h-64 bg-gray-200 rounded mb-4" />
+              <div className="h-5 bg-gray-200 mb-2 rounded" />
+              <div className="h-4 bg-gray-200 w-1/2 rounded mb-2" />
+              <div className="h-3 bg-gray-200 rounded mb-1" />
+              <div className="h-3 bg-gray-200 w-2/3 rounded" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+  
   if (isError) return <div className="text-center text-red-600">{error.message}</div>;
 
   return (
@@ -86,14 +159,33 @@ const News = ({id}) => {
           const day = created.getDate();
           const month = created.toLocaleString("default", { month: "short" });
 
+          if (isLoading) {
+            return (
+              <div className="grid md:grid-cols-3 gap-8 p-10">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white p-4 rounded shadow animate-pulse"
+                  >
+                    <div className="h-40 bg-gray-200 mb-4 rounded" />
+                    <div className="h-4 bg-gray-200 mb-2 rounded" />
+                    <div className="h-3 bg-gray-200 w-1/2 rounded" />
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
           return (
+            
             <div
               key={post._id}
               className="bg-white rounded shadow hover:shadow-xl transition"
             >
               <img
                 src={imageUrl}
-                alt="Post"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-64 object-cover"
               />
               <div className="p-6">
